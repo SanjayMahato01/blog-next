@@ -1,69 +1,213 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { Navbar } from "@/components/Navbar";
+import {
+  CreateBlogDialog,
+  type BlogFormValues,
+} from "@/components/CreateBlogModal";
+import { BlogTabs } from "@/components/BlogTabs";
+import { BlogList } from "@/components/BlogList";
+import { Pagination } from "@/components/Pagination";
+import { Button } from "@/components/ui/button";
+import { useDebounce } from "@/lib/useDebounce";
+import {
+  useGetPublishedBlogsQuery,
+  useGetMyBlogsQuery,
+  useCreateBlogMutation,
+  useUpdateBlogMutation,
+  useDeleteBlogMutation,
+  useToggleLikeMutation,
+} from "@/lib/api/blogApi";
+import type { Blog } from "@/types/blog";
+import { useGetMeQuery } from "@/lib/api/authApiSlice";
+
+const PAGE_SIZE = 9;
+
+export default function HomePage() {
+  const { data: user } = useGetMeQuery();
+
+  const [tab, setTab] = useState<"published" | "mine">("published");
+  const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const search = useDebounce(searchInput, 300);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<Blog | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null); // ← NEW
+
+  const publishedQuery = useGetPublishedBlogsQuery(
+    { page, limit: PAGE_SIZE, search },
+    { skip: tab !== "published" }
+  );
+  const mineQuery = useGetMyBlogsQuery(
+    { page, limit: PAGE_SIZE, search },
+    { skip: tab !== "mine" || !user }
+  );
+
+  const active = tab === "published" ? publishedQuery : mineQuery;
+
+  const [createBlog, { isLoading: creating }] = useCreateBlogMutation();
+  const [updateBlog, { isLoading: updating }] = useUpdateBlogMutation();
+  const [deleteBlog] = useDeleteBlogMutation();
+  const [toggleLike] = useToggleLikeMutation();
+
+  const handleTabChange = (next: "published" | "mine") => {
+    setTab(next);
+    setPage(1);
+  };
+
+  const handleSearch = (v: string) => {
+    setSearchInput(v);
+    setPage(1);
+  };
+
+  const handleCreate = async (values: BlogFormValues) => {
+    try {
+      await createBlog(values).unwrap();
+      setCreateOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleUpdate = async (values: BlogFormValues) => {
+    if (!editing) return;
+    try {
+      await updateBlog({ id: editing.id, ...values }).unwrap();
+      setEditing(null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this blog?")) return;
+    try {
+      await deleteBlog(id).unwrap();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleToggleLike = (id: string) => {
+    if (!user) return;
+    toggleLike(id);
+  };
+
+  // ← NEW: publish/unpublish handler
+  const handleTogglePublish = async (blog: Blog) => {
+    setTogglingId(blog.id);
+    try {
+      await updateBlog({
+        id: blog.id,
+        isPublished: !blog.isPublished,
+      }).unwrap();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-background">
+      <Navbar user={user} />
+
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <BlogTabs active={tab} onChange={handleTabChange} />
+
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold">Blogs</h1>
+            <p className="mt-1 text-muted-foreground">
+              Discover published articles or manage your own.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={searchInput}
+                onChange={(e) => handleSearch(e.target.value)}
+                placeholder="Search blogs..."
+                className="w-56 rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+              />
+            </div>
+
+            {user && (
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Create Blog
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <BlogList
+          blogs={active.data?.data ?? []}
+          isLoading={active.isLoading}
+          isFetching={active.isFetching}
+          error={active.error}
+          emptyTitle={
+            tab === "published"
+              ? search
+                ? "No results"
+                : "No published blogs"
+              : search
+              ? "No matching blogs"
+              : "You haven't written anything"
+          }
+          emptyDescription={
+            tab === "published"
+              ? search
+                ? `Nothing matched "${search}".`
+                : "Check back later for new articles."
+              : search
+              ? `Nothing matched "${search}".`
+              : "Click 'Create Blog' above to get started."
+          }
+          showActions={tab === "mine"}
+          onDelete={handleDelete}
+          onEdit={(b) => setEditing(b)}
+          onToggleLike={handleToggleLike}
+          onTogglePublish={handleTogglePublish}        // ← NEW
+          togglingPublishId={togglingId}               // ← NEW
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {active.data?.pagination && (
+          <Pagination
+            pagination={active.data.pagination}
+            onPageChange={setPage}
+            disabled={active.isFetching}
+          />
+        )}
       </main>
+
+      <CreateBlogDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        submitting={creating}
+        onSubmit={handleCreate}
+      />
+
+      <CreateBlogDialog
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        initial={
+          editing
+            ? {
+                title: editing.title,
+                content: editing.content,
+                isPublished: editing.isPublished,
+              }
+            : null
+        }
+        submitting={updating}
+        onSubmit={handleUpdate}
+      />
     </div>
   );
 }

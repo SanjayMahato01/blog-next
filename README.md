@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ============================================
+# BLOG APP — COMPLETE SETUP (DVertex)
+# ============================================
 
-## Getting Started
+# 1. Clone the repo
+git clone https://github.com/SanjayMahato01/blog-next.git
+cd blog-next
 
-First, run the development server:
+# 2. Install dependencies
+npm install
 
-```bash
+# 3. Create .env file
+cat > .env << 'EOF'
+DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
+JWT_SECRET="replace_with_a_long_random_string"
+NODE_ENV="development"
+EOF
+
+# (Windows PowerShell — use this instead of step 3 if on Windows)
+# @"
+# DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
+# JWT_SECRET="replace_with_a_long_random_string"
+# NODE_ENV="development"
+# "@ | Out-File -Encoding utf8 .env
+
+# 4. Generate a strong JWT secret (copy output into .env)
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+
+# 5. Prisma setup
+npx prisma generate
+npx prisma db push
+
+# 6. (Optional) Open Prisma Studio DB GUI
+# npx prisma studio
+
+# 7. Run the app
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# ============================================
+# PRODUCTION BUILD
+# ============================================
+# npm run build
+# npm start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# ============================================
+# SCRIPTS REFERENCE
+# ============================================
+# npm install            -> Install dependencies
+# npx prisma generate    -> Generate Prisma client
+# npx prisma db push     -> Sync schema to database
+# npx prisma studio      -> Open DB GUI
+# npm run build          -> Build for production
+# npm run dev            -> Start dev server (Turbopack)
+# npm start              -> Start production server
+# npm run lint           -> Run ESLint
 
-## Learn More
+# ============================================
+# ENV VARIABLES
+# ============================================
+# DATABASE_URL  -> PostgreSQL connection string (Neon/Supabase/local)
+# JWT_SECRET    -> Long random string used to sign JWTs
+# NODE_ENV      -> development | production
 
-To learn more about Next.js, take a look at the following resources:
+# ============================================
+# DEPLOY (Vercel)
+# ============================================
+# 1. Push repo to GitHub
+# 2. Import on https://vercel.com
+# 3. Add env vars: DATABASE_URL, JWT_SECRET, NODE_ENV=production
+# 4. Deploy (Vercel runs `npm run build`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# ============================================
+# TROUBLESHOOTING
+# ============================================
+# PrismaClientInitializationError -> Check DATABASE_URL (?sslmode=require for Neon)
+# Invalid JWT / login fails       -> JWT_SECRET must stay same across restarts
+# Vercel build fails              -> Add env vars in Vercel dashboard
+# Prisma types out of date        -> Re-run `npx prisma generate`
+# Module not found after clone    -> Run `npm install`
+# DB schema missing               -> Run `npx prisma db push`
