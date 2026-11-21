@@ -1,82 +1,131 @@
-# ============================================
-# BLOG APP — COMPLETE SETUP (DVertex)
-# ============================================
+# Blog App — Complete Setup (DVertex)
 
-# 1. Clone the repo
+## 1. Clone the Repository
+
+```bash
 git clone https://github.com/SanjayMahato01/blog-next.git
 cd blog-next
+```
 
-# 2. Install dependencies
+## 2. Install Dependencies
+
+```bash
 npm install
+```
 
-# 3. Create .env file
-cat > .env << 'EOF'
+## 3. Create the `.env` File
+
+Create a `.env` file in the root directory:
+
+```env
 DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
 JWT_SECRET="replace_with_a_long_random_string"
 NODE_ENV="development"
-EOF
+```
 
-# (Windows PowerShell — use this instead of step 3 if on Windows)
-# @"
-# DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
-# JWT_SECRET="replace_with_a_long_random_string"
-# NODE_ENV="development"
-# "@ | Out-File -Encoding utf8 .env
+**Windows PowerShell:**
 
-# 4. Generate a strong JWT secret (copy output into .env)
+```powershell
+@"
+DATABASE_URL="postgresql://user:password@host:5432/dbname?sslmode=require"
+JWT_SECRET="replace_with_a_long_random_string"
+NODE_ENV="development"
+"@ | Out-File -Encoding utf8 .env
+```
+
+## 4. Generate a Strong JWT Secret
+
+Run the following command and copy the generated value into your `.env` file.
+
+```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
 
-# 5. Prisma setup
+## 5. Prisma Setup
+
+Generate the Prisma client and synchronize your database schema.
+
+```bash
 npx prisma generate
 npx prisma db push
+```
 
-# 6. (Optional) Open Prisma Studio DB GUI
-# npx prisma studio
+## 6. Open Prisma Studio (Optional)
 
-# 7. Run the app
+```bash
+npx prisma studio
+```
+
+## 7. Run the Application
+
+```bash
 npm run dev
+```
 
-# Open http://localhost:3000
+Open your browser and visit:
 
-# ============================================
-# PRODUCTION BUILD
-# ============================================
-# npm run build
-# npm start
+http://localhost:3000
 
-# ============================================
-# SCRIPTS REFERENCE
-# ============================================
-# npm install            -> Install dependencies
-# npx prisma generate    -> Generate Prisma client
-# npx prisma db push     -> Sync schema to database
-# npx prisma studio      -> Open DB GUI
-# npm run build          -> Build for production
-# npm run dev            -> Start dev server (Turbopack)
-# npm start              -> Start production server
-# npm run lint           -> Run ESLint
+---
 
-# ============================================
-# ENV VARIABLES
-# ============================================
-# DATABASE_URL  -> PostgreSQL connection string (Neon/Supabase/local)
-# JWT_SECRET    -> Long random string used to sign JWTs
-# NODE_ENV      -> development | production
+## Production Build
 
-# ============================================
-# DEPLOY (Vercel)
-# ============================================
-# 1. Push repo to GitHub
-# 2. Import on https://vercel.com
-# 3. Add env vars: DATABASE_URL, JWT_SECRET, NODE_ENV=production
-# 4. Deploy (Vercel runs `npm run build`)
+```bash
+npm run build
+npm start
+```
 
-# ============================================
-# TROUBLESHOOTING
-# ============================================
-# PrismaClientInitializationError -> Check DATABASE_URL (?sslmode=require for Neon)
-# Invalid JWT / login fails       -> JWT_SECRET must stay same across restarts
-# Vercel build fails              -> Add env vars in Vercel dashboard
-# Prisma types out of date        -> Re-run `npx prisma generate`
-# Module not found after clone    -> Run `npm install`
-# DB schema missing               -> Run `npx prisma db push`
+---
+
+## Available Scripts
+
+| Command | Description |
+|---|---|
+| `npm install` | Install dependencies |
+| `npx prisma generate` | Generate Prisma client |
+| `npx prisma db push` | Synchronize database schema |
+| `npx prisma studio` | Open database GUI |
+| `npm run build` | Build for production |
+| `npm run dev` | Start development server |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Neon / Supabase / Local) |
+| `JWT_SECRET` | Secret key used to sign JWTs |
+| `NODE_ENV` | Application environment (`development` or `production`) |
+
+---
+
+## Deployment (Vercel)
+
+1. Push your repository to GitHub.
+2. Visit [Vercel](https://vercel.com).
+3. Import your GitHub repository.
+4. Add the following environment variables:
+   - `DATABASE_URL`
+   - `JWT_SECRET`
+   - `NODE_ENV=production`
+5. Deploy your application.
+
+---
+
+## Troubleshooting
+
+| Error | Solution |
+|---|---|
+| `PrismaClientInitializationError` | Check your `DATABASE_URL`. For Neon, use `?sslmode=require`. |
+| Invalid JWT / Login fails | Ensure `JWT_SECRET` remains consistent across deployments. |
+| Vercel build fails | Verify that all environment variables are configured in Vercel. |
+| Prisma types are outdated | Run `npx prisma generate`. |
+| Module not found | Run `npm install`. |
+| Database schema missing | Run `npx prisma db push`. |
+
+---
+
+**Developed as part of the DVertex Blog App Assignment.**
